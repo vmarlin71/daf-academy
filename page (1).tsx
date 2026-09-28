@@ -14,10 +14,15 @@ export default function QuizPage(){
   const [selected,setSelected] = useState<number|null>(null)
   const [answers,setAnswers] = useState<number[]>([])
   const [finished,setFinished] = useState(false)
-  if(!mod || !mod.available || !mod.quiz) return <div className="auth-card"><h1>Quiz indisponible</h1><Link className="button primary" href="/">Retour au parcours</Link></div>
-  const quiz = mod.quiz
-  const module = mod
+
+  if(!mod || !mod.available || !mod.quiz) {
+    return <div className="auth-card"><h1>Quiz indisponible</h1><Link className="button primary" href="/">Retour au parcours</Link></div>
+  }
+
+  const currentModule = mod
+  const quiz = currentModule.quiz
   const question = quiz[index]
+
   const score = useMemo(()=>{
     if(!finished) return 0
     const right = quiz.reduce((acc,q,i)=>acc+(answers[i]===q.correctIndex?1:0),0)
@@ -31,23 +36,30 @@ export default function QuizPage(){
     if(index===quiz.length-1){
       const right = quiz.reduce((acc,q,i)=>acc+(nextAnswers[i]===q.correctIndex?1:0),0)
       const finalScore=Math.round(right/quiz.length*100)
-      await saveQuizScore(module.slug,finalScore)
+      await saveQuizScore(currentModule.slug,finalScore)
       setFinished(true)
     } else {
-      setIndex(index+1); setSelected(null)
+      setIndex(index+1)
+      setSelected(null)
     }
   }
 
-  function restart(){setIndex(0);setSelected(null);setAnswers([]);setFinished(false)}
-  const nextModule=modules.find(m=>m.available && m.order>module.order)
+  function restart(){
+    setIndex(0)
+    setSelected(null)
+    setAnswers([])
+    setFinished(false)
+  }
+
+  const nextModule=modules.find(m=>m.available && m.order>currentModule.order)
 
   if(finished){
     const passed=score>=70
     return <div className="quiz-wrap result-wrap">
-      <span className="eyebrow">RÉSULTAT · MODULE {module.order}</span>
+      <span className="eyebrow">RÉSULTAT · MODULE {currentModule.order}</span>
       <div className={`result-circle ${passed?'pass':'fail'}`}><strong>{score}%</strong><span>{passed?'Validé':'À retravailler'}</span></div>
       <h1>{passed ? 'Module validé.' : 'Presque. Revois les points clés.'}</h1>
-      <p className="lead">Ton meilleur score : <b>{Math.max(progress[module.slug]?.bestScore ?? 0,score)}%</b>. La validation demande 70% et la lecture du cours.</p>
+      <p className="lead">Ton meilleur score : <b>{Math.max(progress[currentModule.slug]?.bestScore ?? 0,score)}%</b>. La validation demande 70% et la lecture du cours.</p>
       <div className="review-list">
         {quiz.map((q,i)=>{
           const ok=answers[i]===q.correctIndex
@@ -59,7 +71,7 @@ export default function QuizPage(){
       </div>
       <div className="lesson-actions center">
         <button className="button ghost" onClick={restart}>Refaire le quiz</button>
-        <Link className="button" href={`/modules/${module.slug}`}>Revoir le cours</Link>
+        <Link className="button" href={`/modules/${currentModule.slug}`}>Revoir le cours</Link>
         {passed && nextModule && <Link className="button primary" href={`/modules/${nextModule.slug}`}>Module suivant →</Link>}
         {passed && !nextModule && <Link className="button primary" href="/">Retour au parcours</Link>}
       </div>
@@ -67,9 +79,9 @@ export default function QuizPage(){
   }
 
   return <div className="quiz-wrap">
-    <div className="quiz-top"><Link href={`/modules/${module.slug}`}>← Cours</Link><span>{index+1} / {quiz.length}</span></div>
+    <div className="quiz-top"><Link href={`/modules/${currentModule.slug}`}>← Cours</Link><span>{index+1} / {quiz.length}</span></div>
     <div className="quiz-progress"><span style={{width:`${(index+1)/quiz.length*100}%`}} /></div>
-    <span className="eyebrow">QUIZ · {module.title}</span>
+    <span className="eyebrow">QUIZ · {currentModule.title}</span>
     <h1>{question.question}</h1>
     <div className="options">
       {question.options.map((o,i)=><button onClick={()=>setSelected(i)} className={selected===i?'selected':''} key={o}><span>{String.fromCharCode(65+i)}</span>{o}</button>)}
